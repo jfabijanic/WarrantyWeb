@@ -1,19 +1,32 @@
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-if (!connectionString) {
-  throw new Error('DATABASE_URL (Postgres connection string) is not set.');
+const connectionString =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.POSTGRES_PRISMA_URL;
+
+let pool;
+// Created lazily so a missing DATABASE_URL gives a clear API error instead of crashing the whole function.
+function getPool() {
+  if (pool) return pool;
+  if (!connectionString) {
+    throw new Error('Baza nije konfigurirana: postavi DATABASE_URL (Postgres connection string).');
+  }
+  const isLocal = /@(localhost|127\.0\.0\.1)(:|\/)/.test(connectionString);
+  // SSL is configured explicitly below, so strip sslmode/channel_binding from the URL.
+  const url = connectionString
+    .replace(/([?&])(sslmode|channel_binding)=[^&]*&?/g, '$1')
+    .replace(/[?&]$/, '');
+  pool = new Pool({
+    connectionString: url,
+    ssl: isLocal ? false : { rejectUnauthorized: false },
+    max: process.env.VERCEL ? 1 : 10,
+  });
+  return pool;
 }
-
-const isLocal = /@(localhost|127\.0\.0\.1)(:|\/)/.test(connectionString);
-
-// Strip sslmode from the URL: SSL is configured explicitly below so pg doesn't override it.
-const pool = new Pool({
-  connectionString: connectionString.replace(/([?&])sslmode=[^&]*&?/, '$1').replace(/[?&]$/, ''),
-  ssl: isLocal ? false : { rejectUnauthorized: false },
-  max: process.env.VERCEL ? 1 : 10,
-});
 
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (
@@ -57,7 +70,7 @@ const SCHEMA = `
 
 async function init() {
   // Advisory lock keeps concurrent cold starts from racing on schema creation.
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     await client.query('SELECT pg_advisory_lock(727274)');
     await client.query(SCHEMA);
@@ -86,6 +99,11 @@ function ensureReady() {
   return ready;
 }
 
-const query = (text, params) => pool.query(text, params);
+const query = (text, params) => getPool().query(text, params);
 
-module.exports = { pool, query, ensureReady };
+module.exports = {
+  query,
+  ensureReady,
+  getPool,
+  hasConnectionString: () => !!connectionString,
+};

@@ -1,4 +1,4 @@
-const { pool, ensureReady } = require('./db');
+const { getPool, ensureReady } = require('./db');
 const { computeWarrantyEndDate } = require('./warranty');
 
 // Nabavni datumi su postavljeni relativno na "danas" tako da seed prikazuje
@@ -14,7 +14,7 @@ const devices = [
 
 (async () => {
   await ensureReady();
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     await client.query('BEGIN');
     const adminId = (await client.query("SELECT id FROM users WHERE lower(username) = 'admin'")).rows[0].id;
@@ -36,7 +36,7 @@ const devices = [
     throw err;
   } finally {
     client.release();
-    await pool.end();
+    await getPool().end();
   }
 })().catch((err) => {
   console.error(err);

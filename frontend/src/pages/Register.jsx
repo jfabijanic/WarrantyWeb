@@ -40,7 +40,7 @@ export default function Register() {
       setError(
         err.code === 'username_taken' ? t.registerErrUsernameTaken
           : err.code === 'email_taken' ? t.registerErrEmailTaken
-            : t.registerErrGeneric,
+            : err.status >= 500 || !err.status ? `${t.serverError}: ${err.message}` : (err.message || t.registerErrGeneric),
       );
       setSubmitting(false);
     }

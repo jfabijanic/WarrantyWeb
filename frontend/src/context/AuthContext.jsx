@@ -18,7 +18,8 @@ export function AuthProvider({ children }) {
       setUsername(data.username);
       return true;
     } catch (err) {
-      setError(err.message);
+      // Wrong credentials (400/401) keep the normal message; anything else is a server problem worth showing.
+      setError(err.status === 401 || err.status === 400 ? '' : err.message);
       return false;
     }
   }, []);

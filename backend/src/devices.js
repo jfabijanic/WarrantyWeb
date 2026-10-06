@@ -1,5 +1,5 @@
 const express = require('express');
-const { query, pool } = require('./db');
+const { query, getPool } = require('./db');
 const { computeWarrantyEndDate, getWarrantyStatus } = require('./warranty');
 
 const router = express.Router();
@@ -115,7 +115,7 @@ router.post('/', async (req, res) => {
 
   const warranty_end_date = computeWarrantyEndDate(purchase_date, warranty_months);
 
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     await client.query('BEGIN');
     const { rows } = await client.query(
@@ -150,7 +150,7 @@ router.put('/:id', async (req, res) => {
   merged.warranty_end_date = computeWarrantyEndDate(merged.purchase_date, merged.warranty_months);
   merged.price = merged.price === '' ? null : merged.price;
 
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     await client.query('BEGIN');
     const { rows } = await client.query(

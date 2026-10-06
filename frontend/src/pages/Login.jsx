@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, error: serverError } = useAuth();
   const { t } = useLanguage();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +18,7 @@ export default function Login() {
     setSubmitting(true);
     const ok = await login(username, password);
     setSubmitting(false);
-    if (!ok) setError(t.loginError);
+    if (!ok) setError('__failed__');
   }
 
   return (
@@ -34,7 +34,7 @@ export default function Login() {
           {t.loginSubtitle}
         </div>
 
-        {error && <div className="form-error-box">{error}</div>}
+        {error && <div className="form-error-box">{serverError ? `${t.serverError}: ${serverError}` : t.loginError}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="field" style={{ marginBottom: 14 }}>
