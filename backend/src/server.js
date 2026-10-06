@@ -15,7 +15,13 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 // Diagnostics: reports whether the database is configured and reachable (no secrets are returned).
 app.get('/api/health/db', async (req, res) => {
-  const info = { configured: hasConnectionString(), jwtSecretSet: !!process.env.JWT_SECRET };
+  const info = {
+    configured: hasConnectionString(),
+    jwtSecretSet: !!process.env.JWT_SECRET,
+    vercelEnv: process.env.VERCEL_ENV || null,
+    // Names only, never values.
+    envNames: Object.keys(process.env).filter((k) => /^(DATABASE|POSTGRES|PG|NEON|JWT|ADMIN)/.test(k)).sort(),
+  };
   try {
     await ensureReady();
     res.json({ ...info, ok: true });
