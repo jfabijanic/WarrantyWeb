@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="UTF-8">
+<title>WarrantyPlus – Dark Mode</title>
+<style>
+  :root{
+    --bg:#0b0f19; --card:#121826; --card2:#171f30; --text:#e5e7eb; --muted:#8b93a7; --border:#232c3f;
+    --primary:#818cf8; --primary-bg:#1e2338;
+    --green:#34d399; --green-bg:#0f2c22;
+    --amber:#fbbf24; --amber-bg:#352a0f;
+    --red:#f87171; --red-bg:#331418;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Roboto,-apple-system,sans-serif;background:var(--bg);color:var(--text);}
+  .topnav{display:flex;align-items:center;justify-content:space-between;padding:18px 36px;border-bottom:1px solid var(--border);}
+  .logo{font-weight:700;font-size:20px;display:flex;align-items:center;gap:10px;color:#fff;}
+  .logo span{color:var(--primary);}
+  .topnav nav a{color:var(--muted);text-decoration:none;margin-left:28px;font-size:14px;}
+  .topnav nav a.active{color:#fff;font-weight:600;}
+  .main{padding:32px 36px;max-width:1200px;margin:0 auto;}
+  .hero{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;}
+  .hero h1{margin:0;font-size:26px;}
+  .hero .sub{color:var(--muted);margin-top:6px;font-size:14px;}
+  .btn-primary{background:linear-gradient(135deg,#818cf8,#6366f1);color:#fff;border:none;padding:11px 20px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px;box-shadow:0 0 0 1px rgba(255,255,255,.05);}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:28px;}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;position:relative;overflow:hidden;}
+  .stat:before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;}
+  .stat.total:before{background:var(--primary);}
+  .stat.green:before{background:var(--green);}
+  .stat.amber:before{background:var(--amber);}
+  .stat.red:before{background:var(--red);}
+  .stat .label{color:var(--muted);font-size:13px;margin-bottom:8px;}
+  .stat .value{font-size:28px;font-weight:700;}
+  .stat.green .value{color:var(--green);}
+  .stat.amber .value{color:var(--amber);}
+  .stat.red .value{color:var(--red);}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;}
+  .panel h2{margin:0 0 16px;font-size:17px;}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:14px 10px;border-bottom:1px solid var(--border);}
+  .row:last-child{border-bottom:none;}
+  .device{display:flex;align-items:center;gap:14px;}
+  .icon{width:42px;height:42px;border-radius:12px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .device .meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .device .name{font-weight:600;font-size:14px;}
+  .badge{padding:5px 12px;border-radius:999px;font-size:12px;font-weight:600;}
+  .badge.active{background:var(--green-bg);color:var(--green);}
+  .badge.soon{background:var(--amber-bg);color:var(--amber);}
+  .badge.expired{background:var(--red-bg);color:var(--red);}
+  .right{text-align:right;}
+  .right .date{font-size:13px;color:var(--muted);}
+</style>
+</head>
+<body>
+  <div class="topnav">
+    <div class="logo">🛡️ Warranty<span>Plus</span></div>
+    <nav>
+      <a href="#" class="active">Nadzorna ploča</a>
+      <a href="#">Uređaji</a>
+      <a href="#">Postavke</a>
+    </nav>
+  </div>
+  <div class="main">
+    <div class="hero">
+      <div>
+        <h1>Dobrodošao natrag 👋</h1>
+        <div class="sub">Ovo je stanje garancija tvojih uređaja danas, 06.10.2026.</div>
+      </div>
+      <button class="btn-primary">+ Dodaj uređaj</button>
+    </div>
+    <div class="stats">
+      <div class="stat total"><div class="label">Ukupno uređaja</div><div class="value">12</div></div>
+      <div class="stat green"><div class="label">Aktivna garancija</div><div class="value">7</div></div>
+      <div class="stat amber"><div class="label">Uskoro ističe</div><div class="value">2</div></div>
+      <div class="stat red"><div class="label">Istekla garancija</div><div class="value">3</div></div>
+    </div>
+    <div class="panel">
+      <h2>Najnoviji uređaji</h2>
+      <div class="row">
+        <div class="device"><div class="icon">📱</div><div><div class="name">iPhone 14 Pro</div><div class="meta">Apple · SN A1B2C3</div></div></div>
+        <div class="right"><span class="badge active">Aktivna</span><div class="date">do 12.03.2026.</div></div>
+      </div>
+      <div class="row">
+        <div class="device"><div class="icon">💻</div><div><div class="name">MacBook Air M2</div><div class="meta">Apple · SN FVFXW</div></div></div>
+        <div class="right"><span class="badge soon">Ističe za 18 dana</span><div class="date">do 05.11.2025.</div></div>
+      </div>
+      <div class="row">
+        <div class="device"><div class="icon">📺</div><div><div class="name">QLED TV 55"</div><div class="meta">Samsung · SN QE55Q</div></div></div>
+        <div class="right"><span class="badge expired">Istekla</span><div class="date">do 20.01.2024.</div></div>
+      </div>
+      <div class="row">
+        <div class="device"><div class="icon">🧊</div><div><div class="name">Hladnjak No Frost</div><div class="meta">Bosch · SN KGN39</div></div></div>
+        <div class="right"><span class="badge soon">Ističe za 5 dana</span><div class="date">do 14.06.2025.</div></div>
+      </div>
+      <div class="row">
+        <div class="device"><div class="icon">🎧</div><div><div class="name">Slušalice WH-1000XM5</div><div class="meta">Sony · SN WHX5</div></div></div>
+        <div class="right"><span class="badge active">Aktivna</span><div class="date">do 02.09.2026.</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

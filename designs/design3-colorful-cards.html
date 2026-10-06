@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="UTF-8">
+<title>WarrantyPlus – Colorful Cards</title>
+<style>
+  :root{
+    --bg:#f8f9fc; --text:#1f2430; --muted:#6b7280;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --primary:#7c3aed;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Roboto,-apple-system,sans-serif;background:var(--bg);color:var(--text);}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:22px 40px;}
+  .logo{font-weight:800;font-size:22px;}
+  .logo span{color:var(--primary);}
+  .btn-primary{background:var(--primary);color:#fff;border:none;padding:12px 22px;border-radius:14px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:0 8px 20px rgba(124,58,237,.3);}
+  .main{padding:0 40px 40px;max-width:1200px;margin:0 auto;}
+  h1{font-size:28px;margin:0 0 4px;}
+  .sub{color:var(--muted);margin-bottom:26px;}
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:32px;}
+  .stat-pill{border-radius:20px;padding:20px 22px;color:#fff;position:relative;overflow:hidden;}
+  .stat-pill .value{font-size:30px;font-weight:800;}
+  .stat-pill .label{font-size:13px;opacity:.9;margin-top:4px;}
+  .stat-pill.total{background:linear-gradient(135deg,#7c3aed,#a78bfa);}
+  .stat-pill.green{background:linear-gradient(135deg,#16a34a,#4ade80);}
+  .stat-pill.amber{background:linear-gradient(135deg,#d97706,#fbbf24);}
+  .stat-pill.red{background:linear-gradient(135deg,#dc2626,#f87171);}
+  .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .section-title h2{font-size:18px;margin:0;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;}
+  .card{background:#fff;border-radius:20px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.04);border-top:5px solid var(--muted);}
+  .card.active{border-top-color:var(--green);}
+  .card.soon{border-top-color:var(--amber);}
+  .card.expired{border-top-color:var(--red);}
+  .card .top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .card .icon{font-size:26px;width:46px;height:46px;border-radius:14px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;}
+  .card .name{font-weight:700;font-size:15px;}
+  .card .brand{color:var(--muted);font-size:12px;}
+  .card .info{font-size:13px;color:var(--muted);margin-bottom:10px;}
+  .pill{display:inline-block;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+  .pill.active{background:#dcfce7;color:var(--green);}
+  .pill.soon{background:#fef3c7;color:var(--amber);}
+  .pill.expired{background:#fee2e2;color:var(--red);}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">🛡️ Warranty<span>Plus</span></div>
+    <button class="btn-primary">+ Dodaj uređaj</button>
+  </div>
+  <div class="main">
+    <h1>Moji uređaji</h1>
+    <div class="sub">Brzi pregled statusa garancije za svaki uređaj</div>
+    <div class="stat-row">
+      <div class="stat-pill total"><div class="value">12</div><div class="label">Ukupno uređaja</div></div>
+      <div class="stat-pill green"><div class="value">7</div><div class="label">Aktivna garancija</div></div>
+      <div class="stat-pill amber"><div class="value">2</div><div class="label">Uskoro ističe</div></div>
+      <div class="stat-pill red"><div class="value">3</div><div class="label">Istekla garancija</div></div>
+    </div>
+    <div class="section-title"><h2>Svi uređaji</h2></div>
+    <div class="cards">
+      <div class="card active">
+        <div class="top"><div class="icon">📱</div><div><div class="name">iPhone 14 Pro</div><div class="brand">Apple</div></div></div>
+        <div class="info">Kupljeno: 12.03.2024. · Trgovina: Mimovrste</div>
+        <span class="pill active">Aktivna do 12.03.2026.</span>
+      </div>
+      <div class="card soon">
+        <div class="top"><div class="icon">💻</div><div><div class="name">MacBook Air M2</div><div class="brand">Apple</div></div></div>
+        <div class="info">Kupljeno: 05.11.2023. · Trgovina: Links</div>
+        <span class="pill soon">Ističe za 18 dana</span>
+      </div>
+      <div class="card expired">
+        <div class="top"><div class="icon">📺</div><div><div class="name">QLED TV 55"</div><div class="brand">Samsung</div></div></div>
+        <div class="info">Kupljeno: 20.01.2022. · Trgovina: Emmezeta</div>
+        <span class="pill expired">Istekla 20.01.2024.</span>
+      </div>
+      <div class="card soon">
+        <div class="top"><div class="icon">🧊</div><div><div class="name">Hladnjak No Frost</div><div class="brand">Bosch</div></div></div>
+        <div class="info">Kupljeno: 14.06.2023. · Trgovina: Pevex</div>
+        <span class="pill soon">Ističe za 5 dana</span>
+      </div>
+      <div class="card active">
+        <div class="top"><div class="icon">🎧</div><div><div class="name">WH-1000XM5</div><div class="brand">Sony</div></div></div>
+        <div class="info">Kupljeno: 02.09.2024. · Trgovina: Sancta Domenica</div>
+        <span class="pill active">Aktivna do 02.09.2026.</span>
+      </div>
+      <div class="card expired">
+        <div class="top"><div class="icon">🖨️</div><div><div class="name">Printer LaserJet</div><div class="brand">HP</div></div></div>
+        <div class="info">Kupljeno: 10.02.2021. · Trgovina: Instar</div>
+        <span class="pill expired">Istekla 10.02.2023.</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

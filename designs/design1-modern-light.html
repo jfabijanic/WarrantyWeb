@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="UTF-8">
+<title>WarrantyPlus – Modern Light</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --text:#1e293b; --muted:#64748b; --border:#e5e9f2;
+    --primary:#4f46e5; --primary-light:#eef2ff;
+    --green:#16a34a; --green-bg:#dcfce7;
+    --amber:#d97706; --amber-bg:#fef3c7;
+    --red:#dc2626; --red-bg:#fee2e2;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Roboto,-apple-system,sans-serif;background:var(--bg);color:var(--text);}
+  .layout{display:flex;min-height:100vh;}
+  .sidebar{width:230px;background:#fff;border-right:1px solid var(--border);padding:24px 16px;}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;margin-bottom:32px;color:var(--primary);}
+  .nav a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;color:var(--muted);text-decoration:none;font-size:14px;margin-bottom:4px;}
+  .nav a.active{background:var(--primary-light);color:var(--primary);font-weight:600;}
+  .main{flex:1;padding:32px 40px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+  .topbar h1{font-size:24px;margin:0;}
+  .topbar .sub{color:var(--muted);font-size:14px;margin-top:4px;}
+  .btn-primary{background:var(--primary);color:#fff;border:none;padding:10px 18px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:28px;}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;}
+  .stat .label{color:var(--muted);font-size:13px;margin-bottom:8px;}
+  .stat .value{font-size:28px;font-weight:700;}
+  .stat.green .value{color:var(--green);}
+  .stat.amber .value{color:var(--amber);}
+  .stat.red .value{color:var(--red);}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;}
+  .panel h2{margin:0 0 16px;font-size:17px;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:12px;text-transform:uppercase;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--border);}
+  td{padding:14px 12px;border-bottom:1px solid var(--border);font-size:14px;}
+  tr:last-child td{border-bottom:none;}
+  .device{display:flex;align-items:center;gap:10px;}
+  .icon{width:36px;height:36px;border-radius:10px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .badge{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;}
+  .badge.active{background:var(--green-bg);color:var(--green);}
+  .badge.soon{background:var(--amber-bg);color:var(--amber);}
+  .badge.expired{background:var(--red-bg);color:var(--red);}
+  .muted{color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <div class="logo">🛡️ WarrantyPlus</div>
+    <div class="nav">
+      <a href="#" class="active">📊 Nadzorna ploča</a>
+      <a href="#">💻 Uređaji</a>
+      <a href="#">➕ Dodaj uređaj</a>
+      <a href="#">⚙️ Postavke</a>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1>Nadzorna ploča</h1>
+        <div class="sub">Pregled stanja garancija za sve tvoje uređaje</div>
+      </div>
+      <button class="btn-primary">+ Dodaj uređaj</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="label">Ukupno uređaja</div><div class="value">12</div></div>
+      <div class="stat green"><div class="label">Aktivna garancija</div><div class="value">7</div></div>
+      <div class="stat amber"><div class="label">Uskoro ističe</div><div class="value">2</div></div>
+      <div class="stat red"><div class="label">Istekla garancija</div><div class="value">3</div></div>
+    </div>
+    <div class="panel">
+      <h2>Uređaji</h2>
+      <table>
+        <tr><th>Uređaj</th><th>Proizvođač</th><th>Datum kupnje</th><th>Garancija do</th><th>Status</th></tr>
+        <tr><td><div class="device"><div class="icon">📱</div>iPhone 14 Pro</div></td><td>Apple</td><td>12.03.2024.</td><td>12.03.2026.</td><td><span class="badge active">Aktivna</span></td></tr>
+        <tr><td><div class="device"><div class="icon">💻</div>MacBook Air M2</div></td><td>Apple</td><td>05.11.2023.</td><td>05.11.2025.</td><td><span class="badge soon">Ističe za 18 dana</span></td></tr>
+        <tr><td><div class="device"><div class="icon">📺</div>QLED TV 55"</div></td><td>Samsung</td><td>20.01.2022.</td><td>20.01.2024.</td><td><span class="badge expired">Istekla</span></td></tr>
+        <tr><td><div class="device"><div class="icon">🧊</div>Hladnjak No Frost</div></td><td>Bosch</td><td>14.06.2023.</td><td>14.06.2025.</td><td><span class="badge soon">Ističe za 5 dana</span></td></tr>
+        <tr><td><div class="device"><div class="icon">🎧</div>Slušalice WH-1000XM5</div></td><td>Sony</td><td>02.09.2024.</td><td>02.09.2026.</td><td><span class="badge active">Aktivna</span></td></tr>
+        <tr><td><div class="device"><div class="icon">🖨️</div>Printer LaserJet</div></td><td>HP</td><td>10.02.2021.</td><td>10.02.2023.</td><td><span class="badge expired">Istekla</span></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,181 @@
+export const translations = {
+  hr: {
+    appName: 'WarrantyPlus',
+    nav_dashboard: 'Nadzorna ploča',
+    logout: 'Odjava',
+
+    dashboardTitle: 'Nadzorna ploča',
+    dashboardSubtitle: 'Pregled stanja garancija za sve tvoje uređaje',
+    addDevice: '+ Dodaj uređaj',
+
+    statTotal: 'Ukupno uređaja',
+    statActive: 'Aktivna garancija',
+    statSoon: 'Uskoro ističe',
+    statExpired: 'Istekla garancija',
+
+    devicesHeading: 'Uređaji',
+    searchPlaceholder: '🔍 Pretraži po nazivu, proizvođaču, modelu, SN...',
+
+    filterAll: 'Svi',
+    filterActive: 'Aktivni',
+    filterSoon: 'Uskoro ističu',
+    filterExpired: 'Istekli',
+    allCategories: 'Sve kategorije',
+
+    tableDevice: 'Uređaj',
+    tableManufacturerModel: 'Proizvođač / Model',
+    tableSerial: 'Serijski broj',
+    tablePurchaseDate: 'Datum kupnje',
+    tableWarrantyUntil: 'Garancija do',
+    tableStatus: 'Status',
+
+    loading: 'Učitavanje...',
+    emptyNoDevices: 'Još nema dodanih uređaja. Klikni "+ Dodaj uređaj" da dodaš prvi uređaj.',
+    emptyNoMatch: 'Nema uređaja koji odgovaraju filteru.',
+
+    edit: 'Uredi',
+    delete: 'Obriši',
+    confirmDelete: (name) => `Obrisati uređaj "${name}"? Ova radnja se ne može poništiti.`,
+
+    statusActive: 'Aktivna',
+    statusSoon: 'Uskoro ističe',
+    statusExpired: 'Istekla',
+    dayLabel: (n) => (n === 1 ? 'dan' : 'dana'),
+    daysAgoPrefix: 'prije',
+
+    modalAddTitle: 'Dodaj novi uređaj',
+    modalEditTitle: 'Uredi uređaj',
+    modalSub: 'Unesi osnovne podatke o uređaju i garanciji.',
+    fieldName: 'Naziv uređaja *',
+    fieldNamePlaceholder: 'npr. iPhone 14 Pro',
+    fieldCategory: 'Kategorija',
+    fieldManufacturer: 'Proizvođač',
+    fieldManufacturerPlaceholder: 'npr. Apple',
+    fieldModel: 'Model',
+    fieldModelPlaceholder: 'npr. A2890',
+    fieldSerial: 'Serijski broj',
+    fieldPurchaseDate: 'Datum kupnje *',
+    fieldWarrantyMonths: 'Trajanje garancije (mjeseci) *',
+    fieldPrice: 'Cijena (€)',
+    fieldStore: 'Trgovina',
+    fieldStorePlaceholder: 'npr. Links',
+    fieldNotes: 'Napomena',
+    cancel: 'Odustani',
+    saveChanges: 'Spremi promjene',
+    addButton: 'Dodaj uređaj',
+    saving: 'Spremanje...',
+
+    validationName: 'Naziv uređaja je obavezan.',
+    validationDate: 'Datum kupnje je obavezan.',
+    validationWarranty: 'Trajanje garancije mora biti pozitivan broj mjeseci.',
+    validationPrice: 'Cijena mora biti broj.',
+
+    loginSubtitle: 'Prijavi se za pristup svojim uređajima',
+    loginUsername: 'Korisničko ime',
+    loginPassword: 'Lozinka',
+    loginButton: 'Prijavi se',
+    loggingIn: 'Prijava...',
+    loginError: 'Pogrešno korisničko ime ili lozinka.',
+
+    categories: {
+      mobitel: 'Mobitel',
+      tablet: 'Tablet',
+      racunalo: 'Računalo',
+      televizor: 'Televizor',
+      'kucanski-aparat': 'Kućanski aparat',
+      ostalo: 'Ostalo',
+    },
+  },
+
+  en: {
+    appName: 'WarrantyPlus',
+    nav_dashboard: 'Dashboard',
+    logout: 'Log out',
+
+    dashboardTitle: 'Dashboard',
+    dashboardSubtitle: 'Overview of warranty status for all your devices',
+    addDevice: '+ Add device',
+
+    statTotal: 'Total devices',
+    statActive: 'Active warranty',
+    statSoon: 'Expiring soon',
+    statExpired: 'Expired warranty',
+
+    devicesHeading: 'Devices',
+    searchPlaceholder: '🔍 Search by name, manufacturer, model, serial number...',
+
+    filterAll: 'All',
+    filterActive: 'Active',
+    filterSoon: 'Expiring soon',
+    filterExpired: 'Expired',
+    allCategories: 'All categories',
+
+    tableDevice: 'Device',
+    tableManufacturerModel: 'Manufacturer / Model',
+    tableSerial: 'Serial number',
+    tablePurchaseDate: 'Purchase date',
+    tableWarrantyUntil: 'Warranty until',
+    tableStatus: 'Status',
+
+    loading: 'Loading...',
+    emptyNoDevices: 'No devices added yet. Click "+ Add device" to add your first device.',
+    emptyNoMatch: 'No devices match the selected filters.',
+
+    edit: 'Edit',
+    delete: 'Delete',
+    confirmDelete: (name) => `Delete device "${name}"? This action cannot be undone.`,
+
+    statusActive: 'Active',
+    statusSoon: 'Expiring soon',
+    statusExpired: 'Expired',
+    dayLabel: (n) => (n === 1 ? 'day' : 'days'),
+    daysAgoPrefix: '',
+
+    modalAddTitle: 'Add new device',
+    modalEditTitle: 'Edit device',
+    modalSub: 'Enter the basic device and warranty details.',
+    fieldName: 'Device name *',
+    fieldNamePlaceholder: 'e.g. iPhone 14 Pro',
+    fieldCategory: 'Category',
+    fieldManufacturer: 'Manufacturer',
+    fieldManufacturerPlaceholder: 'e.g. Apple',
+    fieldModel: 'Model',
+    fieldModelPlaceholder: 'e.g. A2890',
+    fieldSerial: 'Serial number',
+    fieldPurchaseDate: 'Purchase date *',
+    fieldWarrantyMonths: 'Warranty duration (months) *',
+    fieldPrice: 'Price (€)',
+    fieldStore: 'Store',
+    fieldStorePlaceholder: 'e.g. Links',
+    fieldNotes: 'Notes',
+    cancel: 'Cancel',
+    saveChanges: 'Save changes',
+    addButton: 'Add device',
+    saving: 'Saving...',
+
+    validationName: 'Device name is required.',
+    validationDate: 'Purchase date is required.',
+    validationWarranty: 'Warranty duration must be a positive number of months.',
+    validationPrice: 'Price must be a number.',
+
+    loginSubtitle: 'Sign in to access your devices',
+    loginUsername: 'Username',
+    loginPassword: 'Password',
+    loginButton: 'Sign in',
+    loggingIn: 'Signing in...',
+    loginError: 'Incorrect username or password.',
+
+    categories: {
+      mobitel: 'Phone',
+      tablet: 'Tablet',
+      racunalo: 'Computer',
+      televizor: 'TV',
+      'kucanski-aparat': 'Home appliance',
+      ostalo: 'Other',
+    },
+  },
+};
+
+export function getTranslation(lang) {
+  return translations[lang] || translations.hr;
+}
