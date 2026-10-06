@@ -52,13 +52,13 @@ function validateDevicePayload(body, { partial = false } = {}) {
 
 // GET /api/devices - list all devices (with computed warranty status)
 router.get('/', (req, res) => {
-  const rows = db.prepare('SELECT * FROM devices ORDER BY warranty_end_date ASC').all();
+  const rows = db.prepare('SELECT * FROM devices WHERE user_id = ? ORDER BY warranty_end_date ASC').all(req.user.id);
   res.json(rows.map(serializeDevice));
 });
 
 // GET /api/devices/summary - dashboard stats
 router.get('/summary', (req, res) => {
-  const rows = db.prepare('SELECT * FROM devices').all();
+  const rows = db.prepare('SELECT * FROM devices WHERE user_id = ?').all(req.user.id);
   const summary = { total: rows.length, active: 0, soon: 0, expired: 0, total_value: 0 };
   for (const row of rows) {
     const { status } = getWarrantyStatus(row.warranty_end_date);
@@ -71,7 +71,7 @@ router.get('/summary', (req, res) => {
 
 // GET /api/devices/:id/history
 router.get('/:id/history', (req, res) => {
-  const exists = db.prepare('SELECT id FROM devices WHERE id = ?').get(req.params.id);
+  const exists = db.prepare('SELECT id FROM devices WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
   if (!exists) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
   const rows = db
     .prepare('SELECT * FROM device_history WHERE device_id = ? ORDER BY datetime(created_at) DESC, id DESC')
@@ -81,7 +81,7 @@ router.get('/:id/history', (req, res) => {
 
 // GET /api/devices/:id
 router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM devices WHERE id = ?').get(req.params.id);
+  const row = db.prepare('SELECT * FROM devices WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
   if (!row) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
   res.json(serializeDevice(row));
 });
@@ -101,11 +101,11 @@ router.post('/', (req, res) => {
 
   const stmt = db.prepare(`
     INSERT INTO devices
-      (name, category, manufacturer, model, serial_number, purchase_date, price, store, warranty_months, warranty_end_date, notes)
-    VALUES (@name, @category, @manufacturer, @model, @serial_number, @purchase_date, @price, @store, @warranty_months, @warranty_end_date, @notes)
+      (user_id, name, category, manufacturer, model, serial_number, purchase_date, price, store, warranty_months, warranty_end_date, notes)
+    VALUES (@user_id, @name, @category, @manufacturer, @model, @serial_number, @purchase_date, @price, @store, @warranty_months, @warranty_end_date, @notes)
   `);
   const info = stmt.run({
-    name, category, manufacturer, model, serial_number, purchase_date,
+    user_id: req.user.id, name, category, manufacturer, model, serial_number, purchase_date,
     price: price === '' ? null : price, store, warranty_months, warranty_end_date, notes,
   });
 
@@ -116,7 +116,7 @@ router.post('/', (req, res) => {
 
 // PUT /api/devices/:id - update existing device
 router.put('/:id', (req, res) => {
-  const existing = db.prepare('SELECT * FROM devices WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT * FROM devices WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
   if (!existing) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
 
   const errors = validateDevicePayload(req.body, { partial: true });
@@ -132,10 +132,10 @@ router.put('/:id', (req, res) => {
       serial_number=@serial_number, purchase_date=@purchase_date, price=@price,
       store=@store, warranty_months=@warranty_months, warranty_end_date=@warranty_end_date,
       notes=@notes, updated_at=datetime('now')
-    WHERE id=@id
-  `).run(merged);
+    WHERE id=@id AND user_id=@user_id
+  `).run({ ...merged, user_id: req.user.id });
 
-  const row = db.prepare('SELECT * FROM devices WHERE id = ?').get(req.params.id);
+  const row = db.prepare('SELECT * FROM devices WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
 
   const changes = TRACKED_FIELDS
     .filter((f) => normalize(existing[f]) !== normalize(row[f]))
@@ -150,7 +150,7 @@ router.put('/:id', (req, res) => {
 
 // DELETE /api/devices/:id
 router.delete('/:id', (req, res) => {
-  const info = db.prepare('DELETE FROM devices WHERE id = ?').run(req.params.id);
+  const info = db.prepare('DELETE FROM devices WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
   if (info.changes === 0) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
   db.prepare('DELETE FROM device_history WHERE device_id = ?').run(req.params.id);
   res.status(204).end();

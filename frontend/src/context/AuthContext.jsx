@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
-import { login as loginRequest } from '../api/auth';
+import { login as loginRequest, register as registerRequest } from '../api/auth';
 import { getToken, getUsername, saveSession, clearSession } from '../api/auth';
 
 const AuthContext = createContext(null);
@@ -23,6 +23,14 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Throws on failure so the form can show a specific message.
+  const register = useCallback(async (user, email, password) => {
+    const data = await registerRequest(user, email, password);
+    saveSession(data.token, data.username);
+    setToken(data.token);
+    setUsername(data.username);
+  }, []);
+
   const logout = useCallback(() => {
     clearSession();
     setToken(null);
@@ -30,7 +38,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, username, isAuthenticated: !!token, login, logout, error }}>
+    <AuthContext.Provider value={{ token, username, isAuthenticated: !!token, login, register, logout, error }}>
       {children}
     </AuthContext.Provider>
   );

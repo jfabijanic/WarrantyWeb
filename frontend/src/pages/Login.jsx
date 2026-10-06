@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -20,11 +22,11 @@ export default function Login() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg)', padding: 20,
-    }}>
-      <div className="panel" style={{ width: '100%', maxWidth: 380 }}>
+    <div className="login-page">
+      <div className="blob b1" />
+      <div className="blob b2" />
+      <div className="blob b3" />
+      <div className="login-card">
         <div className="logo" style={{ justifyContent: 'center', display: 'flex', marginBottom: 8 }}>
           🛡️ {t.appName}
         </div>
@@ -47,6 +49,13 @@ export default function Login() {
             {submitting ? t.loggingIn : t.loginButton}
           </button>
         </form>
+
+        <div className="muted" style={{ textAlign: 'center', marginTop: 18, fontSize: 14 }}>
+          {t.loginNoAccount} <Link to="/register" className="auth-link">{t.loginGoRegister}</Link>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}>
+          <LanguageSwitcher />
+        </div>
       </div>
     </div>
   );

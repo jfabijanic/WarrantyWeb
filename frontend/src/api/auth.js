@@ -31,3 +31,18 @@ export async function login(username, password) {
   }
   return data;
 }
+
+export async function register(username, email, password) {
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error || 'Registracija nije uspjela.');
+    err.code = data.code;
+    throw err;
+  }
+  return data;
+}

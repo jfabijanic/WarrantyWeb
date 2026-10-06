@@ -14,19 +14,20 @@ const devices = [
 
 const insert = db.prepare(`
   INSERT INTO devices
-    (name, category, manufacturer, model, serial_number, purchase_date, price, store, warranty_months, warranty_end_date, notes)
-  VALUES (@name, @category, @manufacturer, @model, @serial_number, @purchase_date, @price, @store, @warranty_months, @warranty_end_date, @notes)
+    (user_id, name, category, manufacturer, model, serial_number, purchase_date, price, store, warranty_months, warranty_end_date, notes)
+  VALUES (@user_id, @name, @category, @manufacturer, @model, @serial_number, @purchase_date, @price, @store, @warranty_months, @warranty_end_date, @notes)
 `);
 
-const clear = db.prepare('DELETE FROM devices');
-const clearHistory = db.prepare('DELETE FROM device_history');
+const adminId = db.prepare("SELECT id FROM users WHERE username = 'admin'").get().id;
+const clear = db.prepare('DELETE FROM devices WHERE user_id = ?');
+const clearHistory = db.prepare('DELETE FROM device_history WHERE device_id IN (SELECT id FROM devices WHERE user_id = ?)');
 const addCreated = db.prepare("INSERT INTO device_history (device_id, event_type) VALUES (?, 'created')");
 
 db.transaction(() => {
-  clear.run();
-  clearHistory.run();
+  clearHistory.run(adminId);
+  clear.run(adminId);
   for (const d of devices) {
-    const info = insert.run({ ...d, warranty_end_date: computeWarrantyEndDate(d.purchase_date, d.warranty_months) });
+    const info = insert.run({ ...d, user_id: adminId, warranty_end_date: computeWarrantyEndDate(d.purchase_date, d.warranty_months) });
     addCreated.run(info.lastInsertRowid);
   }
 })();
