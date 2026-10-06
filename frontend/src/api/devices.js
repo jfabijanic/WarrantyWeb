@@ -41,6 +41,10 @@ export function getDevice(id) {
   return fetch(`${BASE}/${id}`, { headers: authHeaders() }).then(handle);
 }
 
+export function getDeviceHistory(id) {
+  return fetch(`${BASE}/${id}/history`, { headers: authHeaders() }).then(handle);
+}
+
 export function createDevice(payload) {
   return fetch(BASE, {
     method: 'POST',

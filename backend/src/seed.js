@@ -19,11 +19,15 @@ const insert = db.prepare(`
 `);
 
 const clear = db.prepare('DELETE FROM devices');
+const clearHistory = db.prepare('DELETE FROM device_history');
+const addCreated = db.prepare("INSERT INTO device_history (device_id, event_type) VALUES (?, 'created')");
 
 db.transaction(() => {
   clear.run();
+  clearHistory.run();
   for (const d of devices) {
-    insert.run({ ...d, warranty_end_date: computeWarrantyEndDate(d.purchase_date, d.warranty_months) });
+    const info = insert.run({ ...d, warranty_end_date: computeWarrantyEndDate(d.purchase_date, d.warranty_months) });
+    addCreated.run(info.lastInsertRowid);
   }
 })();
 

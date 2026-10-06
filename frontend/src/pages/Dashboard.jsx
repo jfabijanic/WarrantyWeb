@@ -3,24 +3,21 @@ import { listDevices, getSummary, createDevice, updateDevice, deleteDevice } fro
 import StatusBadge from '../components/StatusBadge';
 import DeviceModal from '../components/DeviceModal';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import DeviceDetailsModal from '../components/DeviceDetailsModal';
 import { CATEGORY_VALUES, categoryIcon } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
-
-function formatDate(iso) {
-  if (!iso) return '-';
-  const [y, m, d] = iso.split('-');
-  return `${d}.${m}.${y}.`;
-}
+import { formatDate, formatMoney } from '../format';
 
 export default function Dashboard() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [devices, setDevices] = useState([]);
-  const [summary, setSummary] = useState({ total: 0, active: 0, soon: 0, expired: 0 });
+  const [summary, setSummary] = useState({ total: 0, active: 0, soon: 0, expired: 0, total_value: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
+  const [viewingDevice, setViewingDevice] = useState(null);
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -107,7 +104,7 @@ export default function Dashboard() {
 
       {error && <div className="form-error-box" style={{ marginBottom: 20 }}>{error}</div>}
 
-      <div className="stats">
+      <div className="stats five">
         <div className={`stat ${statusFilter === 'all' ? 'selected' : ''}`} onClick={() => setStatusFilter('all')}>
           <div className="label">{t.statTotal}</div>
           <div className="value">{summary.total}</div>
@@ -123,6 +120,10 @@ export default function Dashboard() {
         <div className={`stat red ${statusFilter === 'expired' ? 'selected' : ''}`} onClick={() => setStatusFilter('expired')}>
           <div className="label">{t.statExpired}</div>
           <div className="value">{summary.expired}</div>
+        </div>
+        <div className="stat" style={{ cursor: 'default' }}>
+          <div className="label">{t.statTotalValue}</div>
+          <div className="value" style={{ fontSize: 24 }}>{formatMoney(summary.total_value, language)}</div>
         </div>
       </div>
 
@@ -191,7 +192,7 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {filtered.map((d) => (
-                <tr key={d.id}>
+                <tr key={d.id} className="clickable" onClick={() => setViewingDevice(d)}>
                   <td>
                     <div className="device">
                       <div className="icon">{categoryIcon(d.category)}</div>
@@ -205,8 +206,8 @@ export default function Dashboard() {
                   <td><StatusBadge status={d.warranty_status} daysLeft={d.warranty_days_left} /></td>
                   <td>
                     <div className="actions-cell">
-                      <button className="btn-icon" title={t.edit} onClick={() => setEditingDevice(d)}>✏️</button>
-                      <button className="btn-icon" title={t.delete} onClick={() => handleDelete(d)}>🗑️</button>
+                      <button className="btn-icon" title={t.edit} onClick={(e) => { e.stopPropagation(); setEditingDevice(d); }}>✏️</button>
+                      <button className="btn-icon" title={t.delete} onClick={(e) => { e.stopPropagation(); handleDelete(d); }}>🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -217,6 +218,16 @@ export default function Dashboard() {
       </div>
 
       {showAddModal && <DeviceModal onClose={() => setShowAddModal(false)} onSubmit={handleAdd} />}
+      {viewingDevice && (
+        <DeviceDetailsModal
+          device={viewingDevice}
+          onClose={() => setViewingDevice(null)}
+          onEdit={(d) => {
+            setViewingDevice(null);
+            setEditingDevice(d);
+          }}
+        />
+      )}
       {editingDevice && (
         <DeviceModal device={editingDevice} onClose={() => setEditingDevice(null)} onSubmit={handleEdit} />
       )}

@@ -6,6 +6,17 @@ const router = express.Router();
 
 const CATEGORIES = ['mobitel', 'tablet', 'racunalo', 'televizor', 'kucanski-aparat', 'ostalo'];
 
+const TRACKED_FIELDS = [
+  'name', 'category', 'manufacturer', 'model', 'serial_number', 'purchase_date',
+  'price', 'store', 'warranty_months', 'warranty_end_date', 'notes',
+];
+
+// Treat null/undefined/'' as equal and compare numbers by value, so no-op edits aren't logged.
+function normalize(v) {
+  if (v === null || v === undefined || v === '') return '';
+  return String(v);
+}
+
 function serializeDevice(row) {
   const { status, daysLeft } = getWarrantyStatus(row.warranty_end_date);
   return { ...row, warranty_status: status, warranty_days_left: daysLeft };
@@ -48,12 +59,24 @@ router.get('/', (req, res) => {
 // GET /api/devices/summary - dashboard stats
 router.get('/summary', (req, res) => {
   const rows = db.prepare('SELECT * FROM devices').all();
-  const summary = { total: rows.length, active: 0, soon: 0, expired: 0 };
+  const summary = { total: rows.length, active: 0, soon: 0, expired: 0, total_value: 0 };
   for (const row of rows) {
     const { status } = getWarrantyStatus(row.warranty_end_date);
     summary[status] += 1;
+    summary.total_value += row.price || 0;
   }
+  summary.total_value = Math.round(summary.total_value * 100) / 100;
   res.json(summary);
+});
+
+// GET /api/devices/:id/history
+router.get('/:id/history', (req, res) => {
+  const exists = db.prepare('SELECT id FROM devices WHERE id = ?').get(req.params.id);
+  if (!exists) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
+  const rows = db
+    .prepare('SELECT * FROM device_history WHERE device_id = ? ORDER BY datetime(created_at) DESC, id DESC')
+    .all(req.params.id);
+  res.json(rows.map((r) => ({ ...r, changes: r.changes ? JSON.parse(r.changes) : [] })));
 });
 
 // GET /api/devices/:id
@@ -87,6 +110,7 @@ router.post('/', (req, res) => {
   });
 
   const row = db.prepare('SELECT * FROM devices WHERE id = ?').get(info.lastInsertRowid);
+  db.prepare("INSERT INTO device_history (device_id, event_type) VALUES (?, 'created')").run(row.id);
   res.status(201).json(serializeDevice(row));
 });
 
@@ -112,6 +136,15 @@ router.put('/:id', (req, res) => {
   `).run(merged);
 
   const row = db.prepare('SELECT * FROM devices WHERE id = ?').get(req.params.id);
+
+  const changes = TRACKED_FIELDS
+    .filter((f) => normalize(existing[f]) !== normalize(row[f]))
+    .map((f) => ({ field: f, from: existing[f] ?? null, to: row[f] ?? null }));
+  if (changes.length) {
+    db.prepare("INSERT INTO device_history (device_id, event_type, changes) VALUES (?, 'updated', ?)")
+      .run(row.id, JSON.stringify(changes));
+  }
+
   res.json(serializeDevice(row));
 });
 
@@ -119,6 +152,7 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const info = db.prepare('DELETE FROM devices WHERE id = ?').run(req.params.id);
   if (info.changes === 0) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
+  db.prepare('DELETE FROM device_history WHERE device_id = ?').run(req.params.id);
   res.status(204).end();
 });
 
