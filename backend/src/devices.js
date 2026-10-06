@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('./db');
+const { query, pool } = require('./db');
 const { computeWarrantyEndDate, getWarrantyStatus } = require('./warranty');
 
 const router = express.Router();
@@ -51,14 +51,14 @@ function validateDevicePayload(body, { partial = false } = {}) {
 }
 
 // GET /api/devices - list all devices (with computed warranty status)
-router.get('/', (req, res) => {
-  const rows = db.prepare('SELECT * FROM devices WHERE user_id = ? ORDER BY warranty_end_date ASC').all(req.user.id);
+router.get('/', async (req, res) => {
+  const { rows } = await query('SELECT * FROM devices WHERE user_id = $1 ORDER BY warranty_end_date ASC', [req.user.id]);
   res.json(rows.map(serializeDevice));
 });
 
 // GET /api/devices/summary - dashboard stats
-router.get('/summary', (req, res) => {
-  const rows = db.prepare('SELECT * FROM devices WHERE user_id = ?').all(req.user.id);
+router.get('/summary', async (req, res) => {
+  const { rows } = await query('SELECT * FROM devices WHERE user_id = $1', [req.user.id]);
   const summary = { total: rows.length, active: 0, soon: 0, expired: 0, total_value: 0 };
   for (const row of rows) {
     const { status } = getWarrantyStatus(row.warranty_end_date);
@@ -69,25 +69,41 @@ router.get('/summary', (req, res) => {
   res.json(summary);
 });
 
+// Express params are strings; reject non-numeric ids before they reach Postgres.
+function parseId(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0 || id > 2147483647) {
+    res.status(404).json({ error: 'Uređaj nije pronađen.' });
+    return null;
+  }
+  return id;
+}
+
+async function findOwned(id, userId) {
+  const { rows } = await query('SELECT * FROM devices WHERE id = $1 AND user_id = $2', [id, userId]);
+  return rows[0];
+}
+
 // GET /api/devices/:id/history
-router.get('/:id/history', (req, res) => {
-  const exists = db.prepare('SELECT id FROM devices WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
-  if (!exists) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
-  const rows = db
-    .prepare('SELECT * FROM device_history WHERE device_id = ? ORDER BY datetime(created_at) DESC, id DESC')
-    .all(req.params.id);
+router.get('/:id/history', async (req, res) => {
+  const id = parseId(req, res);
+  if (id === null) return;
+  if (!(await findOwned(id, req.user.id))) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
+  const { rows } = await query('SELECT * FROM device_history WHERE device_id = $1 ORDER BY created_at DESC, id DESC', [id]);
   res.json(rows.map((r) => ({ ...r, changes: r.changes ? JSON.parse(r.changes) : [] })));
 });
 
 // GET /api/devices/:id
-router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM devices WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+router.get('/:id', async (req, res) => {
+  const id = parseId(req, res);
+  if (id === null) return;
+  const row = await findOwned(id, req.user.id);
   if (!row) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
   res.json(serializeDevice(row));
 });
 
 // POST /api/devices - create new device
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const errors = validateDevicePayload(req.body);
   if (errors.length) return res.status(400).json({ errors });
 
@@ -99,24 +115,32 @@ router.post('/', (req, res) => {
 
   const warranty_end_date = computeWarrantyEndDate(purchase_date, warranty_months);
 
-  const stmt = db.prepare(`
-    INSERT INTO devices
-      (user_id, name, category, manufacturer, model, serial_number, purchase_date, price, store, warranty_months, warranty_end_date, notes)
-    VALUES (@user_id, @name, @category, @manufacturer, @model, @serial_number, @purchase_date, @price, @store, @warranty_months, @warranty_end_date, @notes)
-  `);
-  const info = stmt.run({
-    user_id: req.user.id, name, category, manufacturer, model, serial_number, purchase_date,
-    price: price === '' ? null : price, store, warranty_months, warranty_end_date, notes,
-  });
-
-  const row = db.prepare('SELECT * FROM devices WHERE id = ?').get(info.lastInsertRowid);
-  db.prepare("INSERT INTO device_history (device_id, event_type) VALUES (?, 'created')").run(row.id);
-  res.status(201).json(serializeDevice(row));
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `INSERT INTO devices
+        (user_id, name, category, manufacturer, model, serial_number, purchase_date, price, store, warranty_months, warranty_end_date, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [req.user.id, name, category, manufacturer, model, serial_number, purchase_date,
+        price === '' ? null : price, store, warranty_months, warranty_end_date, notes],
+    );
+    await client.query("INSERT INTO device_history (device_id, event_type) VALUES ($1, 'created')", [rows[0].id]);
+    await client.query('COMMIT');
+    res.status(201).json(serializeDevice(rows[0]));
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 });
 
 // PUT /api/devices/:id - update existing device
-router.put('/:id', (req, res) => {
-  const existing = db.prepare('SELECT * FROM devices WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+router.put('/:id', async (req, res) => {
+  const id = parseId(req, res);
+  if (id === null) return;
+  const existing = await findOwned(id, req.user.id);
   if (!existing) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
 
   const errors = validateDevicePayload(req.body, { partial: true });
@@ -126,33 +150,46 @@ router.put('/:id', (req, res) => {
   merged.warranty_end_date = computeWarrantyEndDate(merged.purchase_date, merged.warranty_months);
   merged.price = merged.price === '' ? null : merged.price;
 
-  db.prepare(`
-    UPDATE devices SET
-      name=@name, category=@category, manufacturer=@manufacturer, model=@model,
-      serial_number=@serial_number, purchase_date=@purchase_date, price=@price,
-      store=@store, warranty_months=@warranty_months, warranty_end_date=@warranty_end_date,
-      notes=@notes, updated_at=datetime('now')
-    WHERE id=@id AND user_id=@user_id
-  `).run({ ...merged, user_id: req.user.id });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `UPDATE devices SET
+        name=$1, category=$2, manufacturer=$3, model=$4, serial_number=$5, purchase_date=$6, price=$7,
+        store=$8, warranty_months=$9, warranty_end_date=$10, notes=$11,
+        updated_at=to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS')
+       WHERE id=$12 AND user_id=$13 RETURNING *`,
+      [merged.name, merged.category, merged.manufacturer, merged.model, merged.serial_number,
+        merged.purchase_date, merged.price, merged.store, merged.warranty_months,
+        merged.warranty_end_date, merged.notes, id, req.user.id],
+    );
+    const row = rows[0];
 
-  const row = db.prepare('SELECT * FROM devices WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
-
-  const changes = TRACKED_FIELDS
-    .filter((f) => normalize(existing[f]) !== normalize(row[f]))
-    .map((f) => ({ field: f, from: existing[f] ?? null, to: row[f] ?? null }));
-  if (changes.length) {
-    db.prepare("INSERT INTO device_history (device_id, event_type, changes) VALUES (?, 'updated', ?)")
-      .run(row.id, JSON.stringify(changes));
+    const changes = TRACKED_FIELDS
+      .filter((f) => normalize(existing[f]) !== normalize(row[f]))
+      .map((f) => ({ field: f, from: existing[f] ?? null, to: row[f] ?? null }));
+    if (changes.length) {
+      await client.query(
+        "INSERT INTO device_history (device_id, event_type, changes) VALUES ($1, 'updated', $2)",
+        [row.id, JSON.stringify(changes)],
+      );
+    }
+    await client.query('COMMIT');
+    res.json(serializeDevice(row));
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
   }
-
-  res.json(serializeDevice(row));
 });
 
-// DELETE /api/devices/:id
-router.delete('/:id', (req, res) => {
-  const info = db.prepare('DELETE FROM devices WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
-  if (info.changes === 0) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
-  db.prepare('DELETE FROM device_history WHERE device_id = ?').run(req.params.id);
+// DELETE /api/devices/:id (history rows are removed via ON DELETE CASCADE)
+router.delete('/:id', async (req, res) => {
+  const id = parseId(req, res);
+  if (id === null) return;
+  const { rowCount } = await query('DELETE FROM devices WHERE id = $1 AND user_id = $2', [id, req.user.id]);
+  if (rowCount === 0) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
   res.status(204).end();
 });
 

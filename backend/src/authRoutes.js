@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const db = require('./db');
+const { query } = require('./db');
 const { verifyCredentials, issueToken } = require('./auth');
 
 const router = express.Router();
@@ -10,12 +10,12 @@ const USERNAME_RE = /^[A-Za-z0-9_.-]{3,30}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // POST /api/auth/login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) {
     return res.status(400).json({ error: 'Korisničko ime i lozinka su obavezni.' });
   }
-  const user = verifyCredentials(username, password);
+  const user = await verifyCredentials(username, password);
   if (!user) {
     return res.status(401).json({ error: 'Pogrešno korisničko ime ili lozinka.' });
   }
@@ -23,7 +23,7 @@ router.post('/login', (req, res) => {
 });
 
 // POST /api/auth/register
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   const { username, email, password } = req.body || {};
   const errors = [];
 
@@ -41,17 +41,29 @@ router.post('/register', (req, res) => {
   const cleanUsername = username.trim();
   const cleanEmail = email.trim();
 
-  if (db.prepare('SELECT 1 FROM users WHERE username = ?').get(cleanUsername)) {
+  const dupUser = await query('SELECT 1 FROM users WHERE lower(username) = lower($1)', [cleanUsername]);
+  if (dupUser.rows.length) {
     return res.status(409).json({ error: 'Korisničko ime je već zauzeto.', code: 'username_taken' });
   }
-  if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(cleanEmail)) {
+  const dupEmail = await query('SELECT 1 FROM users WHERE lower(email) = lower($1)', [cleanEmail]);
+  if (dupEmail.rows.length) {
     return res.status(409).json({ error: 'Račun s tim emailom već postoji.', code: 'email_taken' });
   }
 
-  const info = db
-    .prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)')
-    .run(cleanUsername, cleanEmail, bcrypt.hashSync(password, 10));
-  const user = { id: info.lastInsertRowid, username: cleanUsername };
+  let created;
+  try {
+    created = await query(
+      'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username',
+      [cleanUsername, cleanEmail, bcrypt.hashSync(password, 10)],
+    );
+  } catch (err) {
+    // Unique index violation from a concurrent registration.
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Korisničko ime ili email već postoje.', code: 'username_taken' });
+    }
+    throw err;
+  }
+  const user = created.rows[0];
   res.status(201).json({ token: issueToken(user), username: user.username });
 });
 

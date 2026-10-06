@@ -1,4 +1,4 @@
-const db = require('./db');
+const { pool, ensureReady } = require('./db');
 const { computeWarrantyEndDate } = require('./warranty');
 
 // Nabavni datumi su postavljeni relativno na "danas" tako da seed prikazuje
@@ -12,24 +12,33 @@ const devices = [
   { name: 'Printer LaserJet', category: 'ostalo', manufacturer: 'HP', model: 'LJ-P1102', serial_number: 'LJP-004', purchase_date: '2021-02-10', price: 199, store: 'Instar', warranty_months: 24, notes: '' },
 ];
 
-const insert = db.prepare(`
-  INSERT INTO devices
-    (user_id, name, category, manufacturer, model, serial_number, purchase_date, price, store, warranty_months, warranty_end_date, notes)
-  VALUES (@user_id, @name, @category, @manufacturer, @model, @serial_number, @purchase_date, @price, @store, @warranty_months, @warranty_end_date, @notes)
-`);
-
-const adminId = db.prepare("SELECT id FROM users WHERE username = 'admin'").get().id;
-const clear = db.prepare('DELETE FROM devices WHERE user_id = ?');
-const clearHistory = db.prepare('DELETE FROM device_history WHERE device_id IN (SELECT id FROM devices WHERE user_id = ?)');
-const addCreated = db.prepare("INSERT INTO device_history (device_id, event_type) VALUES (?, 'created')");
-
-db.transaction(() => {
-  clearHistory.run(adminId);
-  clear.run(adminId);
-  for (const d of devices) {
-    const info = insert.run({ ...d, user_id: adminId, warranty_end_date: computeWarrantyEndDate(d.purchase_date, d.warranty_months) });
-    addCreated.run(info.lastInsertRowid);
+(async () => {
+  await ensureReady();
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const adminId = (await client.query("SELECT id FROM users WHERE lower(username) = 'admin'")).rows[0].id;
+    await client.query('DELETE FROM devices WHERE user_id = $1', [adminId]);
+    for (const d of devices) {
+      const { rows } = await client.query(
+        `INSERT INTO devices
+          (user_id, name, category, manufacturer, model, serial_number, purchase_date, price, store, warranty_months, warranty_end_date, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+        [adminId, d.name, d.category, d.manufacturer, d.model, d.serial_number, d.purchase_date, d.price,
+          d.store, d.warranty_months, computeWarrantyEndDate(d.purchase_date, d.warranty_months), d.notes],
+      );
+      await client.query("INSERT INTO device_history (device_id, event_type) VALUES ($1, 'created')", [rows[0].id]);
+    }
+    await client.query('COMMIT');
+    console.log(`Seeded ${devices.length} devices.`);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+    await pool.end();
   }
-})();
-
-console.log(`Seeded ${devices.length} devices.`);
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

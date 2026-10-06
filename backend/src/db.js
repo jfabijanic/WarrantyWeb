@@ -1,67 +1,91 @@
-const path = require('path');
-const Database = require('better-sqlite3');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
-const dbPath = path.join(__dirname, '..', 'warranty.db');
-const db = new Database(dbPath);
+const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL (Postgres connection string) is not set.');
+}
 
-db.pragma('journal_mode = WAL');
+const isLocal = /@(localhost|127\.0\.0\.1)(:|\/)/.test(connectionString);
 
-db.exec(`
+// Strip sslmode from the URL: SSL is configured explicitly below so pg doesn't override it.
+const pool = new Pool({
+  connectionString: connectionString.replace(/([?&])sslmode=[^&]*&?/, '$1').replace(/[?&]$/, ''),
+  ssl: isLocal ? false : { rejectUnauthorized: false },
+  max: process.env.VERCEL ? 1 : 10,
+});
+
+const SCHEMA = `
+  CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username TEXT NOT NULL,
+    email TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS')
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS users_username_key ON users (lower(username));
+  CREATE UNIQUE INDEX IF NOT EXISTS users_email_key ON users (lower(email));
+
   CREATE TABLE IF NOT EXISTS devices (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     category TEXT NOT NULL DEFAULT 'ostalo',
     manufacturer TEXT,
     model TEXT,
     serial_number TEXT,
     purchase_date TEXT NOT NULL,
-    price REAL,
+    price DOUBLE PRECISION,
     store TEXT,
     warranty_months INTEGER NOT NULL DEFAULT 24,
     warranty_end_date TEXT NOT NULL,
     notes TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'),
+    updated_at TEXT NOT NULL DEFAULT to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS')
   );
+  CREATE INDEX IF NOT EXISTS idx_devices_user ON devices(user_id);
 
   CREATE TABLE IF NOT EXISTS device_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    device_id INTEGER NOT NULL,
+    id SERIAL PRIMARY KEY,
+    device_id INTEGER NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
     event_type TEXT NOT NULL,
     changes TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS')
   );
   CREATE INDEX IF NOT EXISTS idx_device_history_device ON device_history(device_id);
-`);
+`;
 
-// Devices that existed before history tracking get a synthetic "created" entry.
-db.exec(`
-  INSERT INTO device_history (device_id, event_type, created_at)
-  SELECT d.id, 'created', d.created_at FROM devices d
-  WHERE NOT EXISTS (SELECT 1 FROM device_history h WHERE h.device_id = d.id);
-`);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE COLLATE NOCASE,
-    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-    password_hash TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
-
-// Default admin account (password "123") is created once; devices from before multi-user support belong to it.
-if (!db.prepare("SELECT id FROM users WHERE username = 'admin'").get()) {
-  db.prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)')
-    .run('admin', 'admin@warrantyplus.local', bcrypt.hashSync('123', 10));
+async function init() {
+  // Advisory lock keeps concurrent cold starts from racing on schema creation.
+  const client = await pool.connect();
+  try {
+    await client.query('SELECT pg_advisory_lock(727274)');
+    await client.query(SCHEMA);
+    const admin = await client.query("SELECT id FROM users WHERE lower(username) = 'admin'");
+    if (!admin.rows.length) {
+      await client.query('INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)', [
+        'admin',
+        'admin@warrantyplus.local',
+        bcrypt.hashSync(process.env.ADMIN_PASSWORD || '123', 10),
+      ]);
+    }
+  } finally {
+    await client.query('SELECT pg_advisory_unlock(727274)').catch(() => {});
+    client.release();
+  }
 }
 
-if (!db.prepare('PRAGMA table_info(devices)').all().some((c) => c.name === 'user_id')) {
-  db.exec('ALTER TABLE devices ADD COLUMN user_id INTEGER');
+let ready;
+function ensureReady() {
+  if (!ready) {
+    ready = init().catch((err) => {
+      ready = null;
+      throw err;
+    });
+  }
+  return ready;
 }
-db.prepare("UPDATE devices SET user_id = (SELECT id FROM users WHERE username = 'admin') WHERE user_id IS NULL").run();
-db.exec('CREATE INDEX IF NOT EXISTS idx_devices_user ON devices(user_id)');
 
-module.exports = db;
+const query = (text, params) => pool.query(text, params);
+
+module.exports = { pool, query, ensureReady };
