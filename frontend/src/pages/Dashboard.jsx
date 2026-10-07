@@ -96,7 +96,7 @@ export default function Dashboard() {
           <h1>{t.dashboardTitle}</h1>
           <div className="sub">{t.dashboardSubtitle}</div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+        <div className="topbar-actions">
           <LanguageSwitcher />
           <button className="btn-primary" onClick={() => setShowAddModal(true)}>{t.addDevice}</button>
         </div>
@@ -139,8 +139,8 @@ export default function Dashboard() {
         </div>
 
         {!loading && devices.length > 0 && (
-          <div style={{ marginBottom: 18 }}>
-            <div className="filter-chips" style={{ marginBottom: 10 }}>
+          <div className="filters">
+            <div className="filter-chips">
               {STATUS_FILTERS.map((f) => (
                 <div
                   key={f.value}
@@ -178,7 +178,7 @@ export default function Dashboard() {
         ) : filtered.length === 0 ? (
           <div className="empty-state">{t.emptyNoMatch}</div>
         ) : (
-          <table>
+          <table className="devices-table">
             <thead>
               <tr>
                 <th>{t.tableDevice}</th>
@@ -193,18 +193,21 @@ export default function Dashboard() {
             <tbody>
               {filtered.map((d) => (
                 <tr key={d.id} className="clickable" onClick={() => setViewingDevice(d)}>
-                  <td>
+                  <td className="cell-name">
                     <div className="device">
                       <div className="icon">{categoryIcon(d.category)}</div>
-                      {d.name}
+                      <div className="device-text">
+                        <span className="device-name">{d.name}</span>
+                        <span className="device-sub">{[d.manufacturer, d.model].filter(Boolean).join(' · ')}</span>
+                      </div>
                     </div>
                   </td>
-                  <td>{[d.manufacturer, d.model].filter(Boolean).join(' / ') || '-'}</td>
-                  <td className="muted">{d.serial_number || '-'}</td>
-                  <td>{formatDate(d.purchase_date)}</td>
-                  <td>{formatDate(d.warranty_end_date)}</td>
-                  <td><StatusBadge status={d.warranty_status} daysLeft={d.warranty_days_left} /></td>
-                  <td>
+                  <td className="cell-mm">{[d.manufacturer, d.model].filter(Boolean).join(' / ') || '-'}</td>
+                  <td className="muted cell-serial">{d.serial_number || '-'}</td>
+                  <td className="cell-purchase">{formatDate(d.purchase_date)}</td>
+                  <td className="cell-warranty" data-label={t.tableWarrantyUntil}>{formatDate(d.warranty_end_date)}</td>
+                  <td className="cell-status"><StatusBadge status={d.warranty_status} daysLeft={d.warranty_days_left} /></td>
+                  <td className="cell-actions">
                     <div className="actions-cell">
                       <button className="btn-icon" title={t.edit} onClick={(e) => { e.stopPropagation(); setEditingDevice(d); }}>✏️</button>
                       <button className="btn-icon" title={t.delete} onClick={(e) => { e.stopPropagation(); handleDelete(d); }}>🗑️</button>

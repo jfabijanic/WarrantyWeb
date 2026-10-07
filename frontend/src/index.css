@@ -103,14 +103,94 @@ tbody tr.clickable{cursor:pointer;}
 button.chip{appearance:none;-webkit-appearance:none;line-height:normal;}
 .chip.active{background:var(--text);color:#fff;border-color:var(--text);}
 
+/* Desktop defaults for markup that is restyled on mobile */
+.sidebar{display:flex;flex-direction:column;}
+.nav{flex:1;}
+.sidebar-user{border-top:1px solid var(--border);padding-top:14px;font-size:13px;}
+.sidebar-name{margin-bottom:8px;padding-left:4px;}
+.sidebar-logout{width:100%;}
+.topbar-actions{display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
+.filters{margin-bottom:18px;}
+.filters .filter-chips{margin-bottom:10px;}
+.filters .filter-chips:last-child{margin-bottom:0;}
+.device-text{display:block;}
+.device-sub{display:none;}
+
 @media (max-width: 800px){
+  html{-webkit-text-size-adjust:100%;}
   .layout{flex-direction:column;}
-  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);}
-  .nav{flex-direction:row;overflow-x:auto;}
-  .stats{grid-template-columns:repeat(2,1fr);}
-  .stats.five{grid-template-columns:repeat(2,1fr);}
-  .details-grid{grid-template-columns:1fr;}
-  .form-grid{grid-template-columns:1fr;}
+
+  /* Sidebar becomes a compact top bar */
+  .sidebar{width:100%;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;
+    padding:10px 16px;border-right:none;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;}
+  .sidebar .logo{margin:0;font-size:18px;}
+  .nav{display:none;}
+  .sidebar-user{display:flex;align-items:center;gap:10px;border-top:none;padding-top:0;}
+  .sidebar-name{margin:0;padding:0;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sidebar-logout{width:auto;padding:8px 12px;font-size:13px;}
+
+  .main{padding:18px 14px 32px;}
+  .topbar{flex-direction:column;align-items:stretch;gap:14px;margin-bottom:18px;}
+  .topbar h1{font-size:21px;}
+  .topbar-actions{flex-direction:row-reverse;align-items:center;justify-content:space-between;gap:10px;}
+  .topbar-actions .btn-primary{padding:11px 16px;}
+
+  .stats,.stats.five{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
+  .stats.five .stat:last-child{grid-column:1 / -1;}
+  .stat{padding:14px;border-radius:14px;}
+  .stat .value{font-size:24px;}
+
+  .panel{padding:14px;border-radius:14px;}
+  .panel-head{flex-direction:column;align-items:stretch;}
+  .search-input{width:100%;min-width:0;padding:11px 12px;font-size:16px;}
+
+  /* Filters scroll horizontally in a single row each */
+  .filter-chips{flex-wrap:nowrap;overflow-x:auto;margin:0 -14px;padding:2px 14px 4px;scrollbar-width:none;}
+  .filter-chips::-webkit-scrollbar{display:none;}
+  .chip{white-space:nowrap;flex-shrink:0;padding:9px 14px;}
+
+  /* Table rows become cards */
+  .devices-table,.devices-table tbody,.devices-table tr,.devices-table td{display:block;width:100%;}
+  .devices-table thead{display:none;}
+  .devices-table tbody tr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"name name actions" "status warranty warranty";
+    gap:10px 8px;align-items:center;padding:14px;margin-bottom:10px;border:1px solid var(--border);border-radius:14px;background:#fff;}
+  .devices-table tbody tr:last-child{margin-bottom:0;}
+  .devices-table td{padding:0;border:none;}
+  .devices-table .cell-name{grid-area:name;min-width:0;}
+  .devices-table .cell-actions{grid-area:actions;width:auto;}
+  .devices-table .cell-status{grid-area:status;}
+  .devices-table .cell-warranty{grid-area:warranty;width:auto;min-width:0;text-align:right;font-size:13px;}
+  .devices-table .cell-warranty::before{content:attr(data-label) ": ";color:var(--muted);}
+  .devices-table .cell-mm,.devices-table .cell-serial,.devices-table .cell-purchase{display:none;}
+  .device-text{display:flex;flex-direction:column;min-width:0;}
+  .device-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;}
+  .device-sub{display:block;color:var(--muted);font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .btn-icon{font-size:18px;padding:10px;}
+
+  /* Modals become bottom sheets */
+  .modal-overlay{align-items:flex-end;padding:0;}
+  .modal{max-width:none;max-height:92vh;border-radius:18px 18px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));}
+  .details-grid,.form-grid{grid-template-columns:1fr;gap:12px;}
+  .field input,.field select,.field textarea{padding:12px;font-size:16px;}
+  .modal-footer{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom));background:#fff;padding:12px 0 0;}
+  .modal-footer button{flex:1;padding:12px 16px;}
+  .timeline-head{flex-direction:column;gap:0;}
+
+  /* Login / register */
+  .login-page{padding:14px;}
+  .login-card{padding:24px 18px;}
+  .login-page .blob.b1{width:280px;height:280px;}
+  .login-page .blob.b2{width:240px;height:240px;}
+  .login-page .blob.b3{display:none;}
+}
+
+@media (max-width: 380px){
+  .sidebar-name{display:none;}
+  .devices-table tbody tr{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name actions" "status status" "warranty warranty";gap:8px;}
+  .devices-table .cell-status{width:auto;justify-self:start;}
+  .devices-table .cell-warranty{text-align:left;}
+  .stat .value{font-size:21px;}
+  .stat .label{font-size:12px;}
 }
 
 /* Login background */
