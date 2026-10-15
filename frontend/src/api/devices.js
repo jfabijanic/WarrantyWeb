@@ -64,3 +64,27 @@ export function updateDevice(id, payload) {
 export function deleteDevice(id) {
   return fetch(`${BASE}/${id}`, { method: 'DELETE', headers: authHeaders() }).then(handle);
 }
+
+export function listDocuments(id) {
+  return fetch(`${BASE}/${id}/documents`, { headers: authHeaders() }).then(handle);
+}
+
+export function uploadDocument(id, kind, file) {
+  const qs = new URLSearchParams({ kind, filename: file.name });
+  return fetch(`${BASE}/${id}/documents?${qs}`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/octet-stream' }),
+    body: file,
+  }).then(handle);
+}
+
+export function deleteDocument(id, docId) {
+  return fetch(`${BASE}/${id}/documents/${docId}`, { method: 'DELETE', headers: authHeaders() }).then(handle);
+}
+
+// Files require the auth header, so they are fetched as blobs instead of linked directly.
+export async function fetchDocumentBlob(id, docId) {
+  const res = await fetch(`${BASE}/${id}/documents/${docId}/file`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Greška (${res.status})`);
+  return res.blob();
+}

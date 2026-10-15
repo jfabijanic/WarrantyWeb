@@ -66,6 +66,18 @@ const SCHEMA = `
     created_at TEXT NOT NULL DEFAULT to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS')
   );
   CREATE INDEX IF NOT EXISTS idx_device_history_device ON device_history(device_id);
+
+  CREATE TABLE IF NOT EXISTS device_documents (
+    id SERIAL PRIMARY KEY,
+    device_id INTEGER NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    data BYTEA NOT NULL,
+    created_at TEXT NOT NULL DEFAULT to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS')
+  );
+  CREATE INDEX IF NOT EXISTS idx_device_documents_device ON device_documents(device_id);
 `;
 
 async function init() {

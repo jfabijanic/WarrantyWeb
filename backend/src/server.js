@@ -46,6 +46,7 @@ app.use('/api/devices', requireAuth, devicesRouter);
 app.use((err, req, res, next) => {
   console.error(err);
   if (res.headersSent) return next(err);
+  if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Datoteka je prevelika (najviše 4 MB).' });
   if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Neispravan JSON.' });
   res.status(500).json({ error: 'Greška na serveru.' });
 });

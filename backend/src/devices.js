@@ -193,4 +193,100 @@ router.delete('/:id', async (req, res) => {
   res.status(204).end();
 });
 
+const DOC_KINDS = ['receipt', 'warranty'];
+const MAX_DOC_BYTES = 4 * 1024 * 1024; // Vercel serverless request bodies are capped at ~4.5 MB.
+const MAX_DOCS_PER_DEVICE = 20;
+
+// Detect the real type from magic bytes instead of trusting the client-supplied Content-Type.
+function sniffMime(buf) {
+  if (buf.length < 12) return null;
+  if (buf.subarray(0, 4).toString('latin1') === '%PDF') return 'application/pdf';
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  if (buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  if (buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+  if (buf.subarray(0, 3).toString('latin1') === 'GIF') return 'image/gif';
+  return null;
+}
+
+const DOC_COLUMNS = 'id, device_id, kind, filename, mime_type, size, created_at';
+
+function parseDocId(req) {
+  const docId = Number(req.params.docId);
+  return Number.isInteger(docId) && docId > 0 && docId <= 2147483647 ? docId : null;
+}
+
+// GET /api/devices/:id/documents
+router.get('/:id/documents', async (req, res) => {
+  const id = parseId(req, res);
+  if (id === null) return;
+  if (!(await findOwned(id, req.user.id))) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
+  const { rows } = await query(`SELECT ${DOC_COLUMNS} FROM device_documents WHERE device_id = $1 ORDER BY created_at DESC, id DESC`, [id]);
+  res.json(rows);
+});
+
+// POST /api/devices/:id/documents?kind=receipt|warranty&filename=... (raw file bytes in the body)
+router.post('/:id/documents', express.raw({ type: () => true, limit: MAX_DOC_BYTES }), async (req, res) => {
+  const id = parseId(req, res);
+  if (id === null) return;
+  if (!(await findOwned(id, req.user.id))) return res.status(404).json({ error: 'Uređaj nije pronađen.' });
+
+  const kind = req.query.kind;
+  if (!DOC_KINDS.includes(kind)) return res.status(400).json({ error: 'Nepoznata vrsta dokumenta.' });
+  const body = req.body;
+  if (!Buffer.isBuffer(body) || body.length === 0) return res.status(400).json({ error: 'Datoteka je prazna.' });
+  const mime = sniffMime(body);
+  if (!mime) return res.status(400).json({ error: 'Dopuštene su samo slike (JPG, PNG, WEBP, GIF) i PDF datoteke.' });
+
+  const count = await query('SELECT COUNT(*)::int AS n FROM device_documents WHERE device_id = $1', [id]);
+  if (count.rows[0].n >= MAX_DOCS_PER_DEVICE) {
+    return res.status(400).json({ error: `Najviše ${MAX_DOCS_PER_DEVICE} dokumenata po uređaju.` });
+  }
+
+  const filename = String(req.query.filename || 'dokument').replace(/[\\/\r\n"]/g, '_').slice(0, 150) || 'dokument';
+  const { rows } = await query(
+    `INSERT INTO device_documents (device_id, kind, filename, mime_type, size, data)
+     VALUES ($1,$2,$3,$4,$5,$6) RETURNING ${DOC_COLUMNS}`,
+    [id, kind, filename, mime, body.length, body],
+  );
+  res.status(201).json(rows[0]);
+});
+
+// GET /api/devices/:id/documents/:docId/file
+router.get('/:id/documents/:docId/file', async (req, res) => {
+  const id = parseId(req, res);
+  const docId = parseDocId(req);
+  if (id === null) return;
+  if (docId === null) return res.status(404).json({ error: 'Dokument nije pronađen.' });
+  const { rows } = await query(
+    `SELECT d.filename, d.mime_type, d.data FROM device_documents d
+     JOIN devices v ON v.id = d.device_id
+     WHERE d.id = $1 AND d.device_id = $2 AND v.user_id = $3`,
+    [docId, id, req.user.id],
+  );
+  const doc = rows[0];
+  if (!doc) return res.status(404).json({ error: 'Dokument nije pronađen.' });
+  res.set({
+    'Content-Type': doc.mime_type,
+    'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(doc.filename)}`,
+    'X-Content-Type-Options': 'nosniff',
+    'Cache-Control': 'private, max-age=300',
+  });
+  res.send(doc.data);
+});
+
+// DELETE /api/devices/:id/documents/:docId
+router.delete('/:id/documents/:docId', async (req, res) => {
+  const id = parseId(req, res);
+  const docId = parseDocId(req);
+  if (id === null) return;
+  if (docId === null) return res.status(404).json({ error: 'Dokument nije pronađen.' });
+  const { rowCount } = await query(
+    `DELETE FROM device_documents WHERE id = $1 AND device_id = $2
+       AND device_id IN (SELECT id FROM devices WHERE id = $2 AND user_id = $3)`,
+    [docId, id, req.user.id],
+  );
+  if (rowCount === 0) return res.status(404).json({ error: 'Dokument nije pronađen.' });
+  res.status(204).end();
+});
+
 module.exports = { router, CATEGORIES };

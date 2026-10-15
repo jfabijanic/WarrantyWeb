@@ -6,6 +6,8 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 import DeviceDetailsModal from '../components/DeviceDetailsModal';
 import { CATEGORY_VALUES, categoryIcon } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
+import { exportDevicesToExcel } from '../exportExcel';
+import { exportDevicesToPdf } from '../exportPdf';
 import { formatDate, formatMoney } from '../format';
 
 export default function Dashboard() {
@@ -217,6 +219,17 @@ export default function Dashboard() {
               ))}
             </tbody>
           </table>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <div className="export-row">
+            <button className="btn-secondary" onClick={() => exportDevicesToExcel(filtered, t).catch((err) => setError(err.message))}>
+              📊 {t.exportExcel}
+            </button>
+            <button className="btn-secondary" onClick={() => exportDevicesToPdf(filtered, t, language).catch((err) => setError(err.message))}>
+              📄 {t.exportPdf}
+            </button>
+          </div>
         )}
       </div>
 

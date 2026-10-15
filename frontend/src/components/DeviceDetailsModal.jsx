@@ -3,6 +3,9 @@ import { getDeviceHistory } from '../api/devices';
 import { useLanguage } from '../context/LanguageContext';
 import { categoryIcon } from '../constants';
 import { formatDate, formatMoney, formatDateTime } from '../format';
+import { exportDeviceToExcel } from '../exportExcel';
+import { exportDeviceToPdf } from '../exportPdf';
+import DeviceDocuments from './DeviceDocuments';
 import StatusBadge from './StatusBadge';
 
 export default function DeviceDetailsModal({ device, onClose, onEdit }) {
@@ -84,6 +87,8 @@ export default function DeviceDetailsModal({ device, onClose, onEdit }) {
           )}
         </div>
 
+        <DeviceDocuments deviceId={device.id} />
+
         <h3 style={{ fontSize: 15, margin: '24px 0 10px' }}>{t.detailsHistory}</h3>
         {historyError ? (
           <div className="form-error-box">{historyError}</div>
@@ -112,6 +117,22 @@ export default function DeviceDetailsModal({ device, onClose, onEdit }) {
         <div className="modal-footer">
           <button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button>
           <button type="button" className="btn-primary" onClick={() => onEdit(device)}>✏️ {t.edit}</button>
+        </div>
+        <div className="export-row">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => exportDeviceToExcel(device, history, t, language, fieldLabel).catch((err) => setHistoryError(err.message))}
+          >
+            📊 {t.exportExcel}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => exportDeviceToPdf(device, history, t, language, fieldLabel).catch((err) => setHistoryError(err.message))}
+          >
+            📄 {t.exportPdf}
+          </button>
         </div>
       </div>
     </div>
